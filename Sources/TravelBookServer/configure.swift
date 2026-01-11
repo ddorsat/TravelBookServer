@@ -14,11 +14,11 @@ public func configure(_ app: Application) async throws {
     tlsConfig.certificateVerification = .fullVerification
     
     let sslContext = try NIOSSLContext(configuration: tlsConfig)
-    let dbConfig = SQLPostgresConfiguration(hostname: DB.hostname,
-                                            port:     DB.port,
-                                            username: DB.username,
-                                            password: DB.password,
-                                            database: DB.db,
+    let dbConfig = SQLPostgresConfiguration(hostname: Environment.get("hostname")!,
+                                            port:     Int(Environment.get("port") ?? "6432") ?? 6432,
+                                            username: Environment.get("username")!,
+                                            password: Environment.get("password"),
+                                            database: Environment.get("db"),
                                             tls: .require(sslContext))
     
     app.databases.use(.postgres(configuration: dbConfig), as: .psql)
