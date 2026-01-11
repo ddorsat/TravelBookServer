@@ -77,6 +77,9 @@ WORKDIR /app
 # Copy built executable and any staged resources from builder
 COPY --from=build --chown=vapor:vapor /staging /app
 
+# Root.crt
+COPY --from=build --chown=vapor:vapor /build/root.crt /app/root.crt
+
 # Provide configuration needed by the built-in crash reporter and some sensible default behaviors.
 ENV SWIFT_BACKTRACE=enable=yes,sanitize=yes,threads=all,images=all,interactive=no,swift-backtrace=./swift-backtrace-static
 
