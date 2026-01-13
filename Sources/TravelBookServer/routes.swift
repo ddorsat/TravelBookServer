@@ -3,22 +3,33 @@ import Fluent
 import FluentSQL
 
 func routes(_ app: Application) throws {
+    let storageController = StorageController()
+    
     app.get("cells") { req async throws -> [CellDTO] in
-        let cells = try await Cell.query(on: req.db).with(\.$category).all()
+        let page = req.query[Int.self, at: "page"] ?? 1
+        let limit = req.query[Int.self, at: "limit"] ?? 6
+        let rawSeed = req.query[String.self, at: "seed"] ?? ""
+        let safeSeed = rawSeed.filter { $0.isLetter || $0.isNumber || $0 == "-" }
         
-        return cells.map { cell in
-            CellDTO(id: cell.id,
-                    image: cell.image,
-                    theme: cell.category.theme,
-                    title: cell.title,
-                    subtitle: cell.subtitle,
-                    date: cell.date,
-                    readingTime: cell.readingTime,
-                    description: cell.description,
-                    images: cell.images,
-                    isPopular: cell.isPopular,
-                    isHeadCell: cell.isHeadCell)
-        }
+        let offset = (page - 1) * limit
+        
+        
+        let cells = try await Cell.query(on: req.db)
+            .with(\.$category)
+            .sort(.sql(unsafeRaw: "md5(id::text || '\(safeSeed)')"))
+            .range(offset..<(offset + limit))
+            .all()
+        
+        return cells.map { $0.toDTO() }
+    }
+    
+    app.get("popular") { req async throws -> [CellDTO] in
+        let popularCells = try await Cell.query(on: req.db)
+            .with(\.$category)
+            .filter(\.$isPopular == true)
+            .all()
+            
+        return popularCells.map { $0.toDTO() }
     }
     
     app.get("categories") { req async throws -> [Category] in
@@ -60,83 +71,11 @@ func routes(_ app: Application) throws {
         
         let cells = try await query.all()
         
-        return cells.map { cell in
-            CellDTO(id: cell.id,
-                    image: cell.image,
-                    theme: cell.category.theme,
-                    title: cell.title,
-                    subtitle: cell.subtitle,
-                    date: cell.date,
-                    readingTime: cell.readingTime,
-                    description: cell.description,
-                    images: cell.images,
-                    isPopular: cell.isPopular,
-                    isHeadCell: cell.isHeadCell)
-        }
+        return cells.map { $0.toDTO() }
     }
     
-    app.get("upload") { req async throws -> String in
-        try await Cell.query(on: req.db).delete()
-        try await Category.query(on: req.db).delete()
-        
-        let foodCategory = Category(title: "Еда", theme: "food", image: "food")
-        let leisureCategory = Category(title: "Развлечения", theme: "leisure", image: "leisure")
-        let fraudCategory = Category(title: "Безопасность", theme: "fraud", image: "fraud")
-        let healthCategory = Category(title: "Здоровье", theme: "health", image: "health")
-        let cultureCategory = Category(title: "Культура", theme: "culture", image: "culture")
-        
-        try await foodCategory.save(on: req.db)
-        try await leisureCategory.save(on: req.db)
-        try await fraudCategory.save(on: req.db)
-        try await healthCategory.save(on: req.db)
-        try await cultureCategory.save(on: req.db)
-        
-        let cellsData = [Cell(categoryID: foodCategory.id!,
-                              image: "food",
-                              title: "Уличная еда: риск или кайф?",
-                              subtitle: "Гастрономический гид",
-                              date: Date(),
-                              readingTime: 6,
-                              description: "Попробовать местную кухню...",
-                              images: ["img1", "img2"],
-                              isPopular: true,
-                              isHeadCell: false),
-                         Cell(categoryID: leisureCategory.id!,
-                              image: "leisure",
-                              title: "Идеальные фото в Instagram",
-                              subtitle: "Снимаем как профи",
-                              date: Date(),
-                              readingTime: 5,
-                              description: "Вам не нужна дорогая камера...",
-                              images: ["img1", "img2"],
-                              isPopular: false,
-                              isHeadCell: false),
-                         Cell(categoryID: fraudCategory.id!,
-                              image: "fraud",
-                              title: "Как не попасться мошенникам",
-                              subtitle: "Правила безопасности",
-                              date: Date(),
-                              readingTime: 4,
-                              description: "Туристические ловушки...",
-                              images: ["img1", "img2"],
-                              isPopular: false,
-                              isHeadCell: false),
-                         Cell(categoryID: healthCategory.id!,
-                              image: "health",
-                              title: "Аптечка туриста",
-                              subtitle: "Здоровье важнее всего",
-                              date: Date(),
-                              readingTime: 6,
-                              description: "Список лекарств...",
-                              images: ["img1", "img2"],
-                              isPopular: false,
-                              isHeadCell: true)]
-        
-        for cell in cellsData {
-            try await cell.save(on: req.db)
-        }
-        
-        return "База данных обновлена!"
+    app.post("api", "upload") { req in
+        return try await storageController.uploadBulkImages(req)
     }
     
     app.get("clear") { req async throws -> String in
@@ -156,11 +95,25 @@ func routes(_ app: Application) throws {
             try await sql.raw("DELETE FROM tokens;").run()
         }
         
-        return "База данных очищена!"
+        return "База данных очищена"
     }
     
     try app.register(collection: AuthController())
     try app.register(collection: FavoritesController())
 }
 
-
+extension Cell {
+    func toDTO() -> CellDTO {
+        return CellDTO(id: self.id,
+                       image: self.image,
+                       theme: self.category.theme,
+                       title: self.title,
+                       subtitle: self.subtitle,
+                       date: self.date,
+                       readingTime: self.readingTime,
+                       description: self.description,
+                       images: self.images,
+                       isPopular: self.isPopular,
+                       isHeadCell: self.isHeadCell)
+    }
+}
