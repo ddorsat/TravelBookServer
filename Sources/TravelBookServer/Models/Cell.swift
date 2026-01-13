@@ -41,6 +41,12 @@ final class Cell: Model, Content, @unchecked Sendable  {
     @Siblings(through: UserFavorite.self, from: \.$cell, to: \.$user)
     var favoritedBy: [User]
     
+    @Field(key: "is_popular")
+    var isPopular: Bool
+    
+    @Field(key: "is_head_cell")
+    var isHeadCell: Bool
+    
     init() {}
     
     init(id: UUID? = nil,
@@ -51,7 +57,9 @@ final class Cell: Model, Content, @unchecked Sendable  {
          date: Date,
          readingTime: Int,
          description: String,
-         images: [String]) {
+         images: [String],
+         isPopular: Bool = false,
+         isHeadCell: Bool = false) {
         self.id = id
         self.$category.id = categoryID
         self.image = image
@@ -61,6 +69,8 @@ final class Cell: Model, Content, @unchecked Sendable  {
         self.readingTime = readingTime
         self.description = description
         self.images = images
+        self.isPopular = isPopular
+        self.isHeadCell = isHeadCell
     }
 }
 
@@ -74,9 +84,13 @@ struct CellDTO: Content {
     let readingTime: Int
     let description: String
     let images: [String]
+    let isPopular: Bool
+    let isHeadCell: Bool
     
     enum CodingKeys: String, CodingKey {
         case id, image, theme, title, subtitle, date, description, images
         case readingTime = "reading_time"
+        case isPopular = "is_popular"
+        case isHeadCell = "is_head_cell"
     }
 }

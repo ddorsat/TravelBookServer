@@ -21,11 +21,12 @@ struct CreateCells: AsyncMigration {
             .field("reading_time", .int, .required)
             .field("description", .string, .required)
             .field("images", .array(of: .string), .required)
+            .field("is_popular", .bool, .required, .sql(.default(false)))
+            .field("is_head_cell", .bool, .required, .sql(.default(false)))
             .create()
     }
     
     func revert(on database: any Database) async throws {
-        let sql = "DROP TABLE cells;"
-        try await (database as! (any SQLDatabase)).raw(SQLQueryString(sql)).run()
+        try await database.schema("cells").delete()
     }
 }

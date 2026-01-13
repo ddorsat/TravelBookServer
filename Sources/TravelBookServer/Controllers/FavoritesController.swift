@@ -71,8 +71,9 @@ struct FavoritesController: RouteCollection {
                 date: cell.date,
                 readingTime: cell.readingTime,
                 description: cell.description,
-                images: cell.images
-            )
+                images: cell.images,
+                isPopular: cell.isPopular,
+                isHeadCell: cell.isHeadCell)
         }
     }
 }

@@ -4,13 +4,9 @@ import FluentSQL
 
 func routes(_ app: Application) throws {
     app.get("cells") { req async throws -> [CellDTO] in
-        let cells = try await Cell.query(on: req.db)
-            .with(\.$category)
-            .all()
+        let cells = try await Cell.query(on: req.db).with(\.$category).all()
         
-        let shuffledCells = cells.shuffled()
-        
-        return shuffledCells.map { cell in
+        return cells.map { cell in
             CellDTO(id: cell.id,
                     image: cell.image,
                     theme: cell.category.theme,
@@ -19,13 +15,14 @@ func routes(_ app: Application) throws {
                     date: cell.date,
                     readingTime: cell.readingTime,
                     description: cell.description,
-                    images: cell.images)
+                    images: cell.images,
+                    isPopular: cell.isPopular,
+                    isHeadCell: cell.isHeadCell)
         }
     }
     
     app.get("categories") { req async throws -> [Category] in
-        let categories = try await Category.query(on: req.db)
-            .all()
+        let categories = try await Category.query(on: req.db).all()
         
         return categories.map { category in
             Category(id: category.id,
@@ -36,8 +33,7 @@ func routes(_ app: Application) throws {
     }
     
     app.get("users") { req async throws -> [UserDTO] in
-        let users = try await User.query(on: req.db)
-            .all()
+        let users = try await User.query(on: req.db).all()
         
         return users.map { user in
             UserDTO(id: user.id,
@@ -73,7 +69,9 @@ func routes(_ app: Application) throws {
                     date: cell.date,
                     readingTime: cell.readingTime,
                     description: cell.description,
-                    images: cell.images)
+                    images: cell.images,
+                    isPopular: cell.isPopular,
+                    isHeadCell: cell.isHeadCell)
         }
     }
     
@@ -100,7 +98,9 @@ func routes(_ app: Application) throws {
                               date: Date(),
                               readingTime: 6,
                               description: "Попробовать местную кухню...",
-                              images: ["img1", "img2"]),
+                              images: ["img1", "img2"],
+                              isPopular: true,
+                              isHeadCell: false),
                          Cell(categoryID: leisureCategory.id!,
                               image: "leisure",
                               title: "Идеальные фото в Instagram",
@@ -108,7 +108,9 @@ func routes(_ app: Application) throws {
                               date: Date(),
                               readingTime: 5,
                               description: "Вам не нужна дорогая камера...",
-                              images: ["img1", "img2"]),
+                              images: ["img1", "img2"],
+                              isPopular: false,
+                              isHeadCell: false),
                          Cell(categoryID: fraudCategory.id!,
                               image: "fraud",
                               title: "Как не попасться мошенникам",
@@ -116,7 +118,9 @@ func routes(_ app: Application) throws {
                               date: Date(),
                               readingTime: 4,
                               description: "Туристические ловушки...",
-                              images: ["img1", "img2"]),
+                              images: ["img1", "img2"],
+                              isPopular: false,
+                              isHeadCell: false),
                          Cell(categoryID: healthCategory.id!,
                               image: "health",
                               title: "Аптечка туриста",
@@ -124,7 +128,9 @@ func routes(_ app: Application) throws {
                               date: Date(),
                               readingTime: 6,
                               description: "Список лекарств...",
-                              images: ["img1", "img2"])]
+                              images: ["img1", "img2"],
+                              isPopular: false,
+                              isHeadCell: true)]
         
         for cell in cellsData {
             try await cell.save(on: req.db)
