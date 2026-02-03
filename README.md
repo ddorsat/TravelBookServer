@@ -7,7 +7,7 @@
 | Фреймворк               | Vapor                                                |
 | База данных             | Yandex PostgreSQL (Raw SQL)                          |
 | Инфраструктура          | Docker, Fly.io (Deployment)                          |
-| Хранилище               | S3 (Yandex Object Storage)                           |
+| Хранилище               | Yandex Object Storage                                |
 | Асинхронность           | Async/await                                          |
 | Инструменты             | Git, Swift Package Manager                           |
 
